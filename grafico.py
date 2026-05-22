@@ -99,11 +99,16 @@ if st.button("Analisar Site"):
 
             valores.append(item[1])
 
-        # mostrar top 10
-        st.subheader("📊 Top 10 palavras")
+        import pandas as pd
 
-        st.write(top10)
+        st.subheader("Top 10 palavras:")
 
+        df_top10 = pd.DataFrame(
+            top10,
+            columns=['Palavra', 'Quantidade']
+        )
+
+st.dataframe(df_top10)
         # gráfico
         st.subheader("📈 Gráfico")
 
