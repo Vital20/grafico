@@ -6,6 +6,7 @@ from wordcloud import WordCloud
 import matplotlib.pyplot as plt
 import nltk
 from nltk.corpus import stopwords
+import pandas as pd
 import re
 
 # baixar stopwords
@@ -30,14 +31,29 @@ if st.button("Analisar Site"):
 
         st.write("Lendo o site...")
 
+        # fingir navegador real
+        headers = {
+            "User-Agent": (
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/120.0.0.0 Safari/537.36"
+            )
+        }
+
         # acessar site
-        response = requests.get(site)
+        response = requests.get(site, headers=headers)
 
         # transformar html
         soup = BeautifulSoup(response.text, 'html.parser')
 
-        # pegar texto
-        texto = soup.get_text()
+        # pegar só manchetes
+        titulos = soup.find_all(['h1', 'h2', 'h3'])
+
+        texto = ""
+
+        for titulo in titulos:
+
+            texto += titulo.get_text() + " "
 
         # limpar texto
         texto = texto.lower()
@@ -68,7 +84,11 @@ if st.button("Analisar Site"):
             'sobre',
             'todos',
             'ainda',
-            'porque'
+            'porque',
+            'principal',
+            'página',
+            'menu',
+            'outros'
         ]
 
         stop_words.update(extras)
@@ -90,6 +110,17 @@ if st.button("Analisar Site"):
         # top 10
         top10 = contagem.most_common(10)
 
+        # tabela
+        st.subheader("📊 Top 10 palavras")
+
+        df_top10 = pd.DataFrame(
+            top10,
+            columns=['Palavra', 'Quantidade']
+        )
+
+        st.dataframe(df_top10)
+
+        # separar gráfico
         nomes = []
         valores = []
 
@@ -99,16 +130,6 @@ if st.button("Analisar Site"):
 
             valores.append(item[1])
 
-        import pandas as pd
-
-        st.subheader("Top 10 palavras:")
-
-        df_top10 = pd.DataFrame(
-            top10,
-            columns=['Palavra', 'Quantidade']
-        )
-
-st.dataframe(df_top10)
         # gráfico
         st.subheader("📈 Gráfico")
 
