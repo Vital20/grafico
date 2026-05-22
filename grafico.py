@@ -1,5 +1,6 @@
 import streamlit as st
-from docling.document_converter import DocumentConverter
+import requests
+from bs4 import BeautifulSoup
 from collections import Counter
 from wordcloud import WordCloud
 import matplotlib.pyplot as plt
@@ -10,109 +11,129 @@ import re
 # baixar stopwords
 nltk.download('stopwords')
 
-# título do site
-st.title("Analisador de Manchetes de Futebol")
+# título
+st.title("⚽ Analisador de Manchetes de Futebol")
 
-# input do usuário
+# descrição
+st.write("Cole o link de um site de futebol e veja as palavras mais usadas.")
+
+# input
 site = st.text_input(
-    "Digite o site:",
+    "Digite o link do site:",
     "https://ge.globo.com/futebol/"
 )
 
 # botão
-if st.button("Analisar site"):
+if st.button("Analisar Site"):
 
-    st.write("Lendo o site...")
+    try:
 
-    # converter site em texto
-    converter = DocumentConverter()
-    doc = converter.convert(site).document
+        st.write("Lendo o site...")
 
-    texto = doc.export_to_markdown()
+        # acessar site
+        response = requests.get(site)
 
-    # limpeza do texto
-    texto = texto.lower()
+        # transformar html
+        soup = BeautifulSoup(response.text, 'html.parser')
 
-    texto = re.sub(r'[^\w\s]', '', texto)
+        # pegar texto
+        texto = soup.get_text()
 
-    texto = re.sub(r'\d+', '', texto)
+        # limpar texto
+        texto = texto.lower()
 
-    # stopwords
-    stop_words = set(stopwords.words('portuguese'))
+        texto = re.sub(r'[^\w\s]', '', texto)
 
-    extras = [
-        'image',
-        'imagem',
-        'globo',
-        'ge',
-        'sportv',
-        'facebook',
-        'twitter',
-        'instagram',
-        'youtube',
-        'whatsapp',
-        'site',
-        'seguir',
-        'compartilhar',
-        'horas'
-    ]
+        texto = re.sub(r'\d+', '', texto)
 
-    stop_words.update(extras)
+        # stopwords
+        stop_words = set(stopwords.words('portuguese'))
 
-    # separar palavras
-    palavras = texto.split()
+        extras = [
+            'image',
+            'imagem',
+            'globo',
+            'ge',
+            'sportv',
+            'facebook',
+            'twitter',
+            'instagram',
+            'youtube',
+            'whatsapp',
+            'site',
+            'seguir',
+            'compartilhar',
+            'horas',
+            'mais',
+            'sobre',
+            'todos',
+            'ainda',
+            'porque'
+        ]
 
-    palavras_filtradas = []
+        stop_words.update(extras)
 
-    for palavra in palavras:
-        if palavra not in stop_words and len(palavra) > 3:
-            palavras_filtradas.append(palavra)
+        # separar palavras
+        palavras = texto.split()
 
-    # contagem
-    contagem = Counter(palavras_filtradas)
+        palavras_filtradas = []
 
-    # top 10
-    top10 = contagem.most_common(10)
+        for palavra in palavras:
 
-    nomes = []
-    valores = []
+            if palavra not in stop_words and len(palavra) > 3:
 
-    for item in top10:
-        nomes.append(item[0])
-        valores.append(item[1])
+                palavras_filtradas.append(palavra)
 
-    # mostrar tabela
-    st.subheader("Top 10 palavras")
+        # contar palavras
+        contagem = Counter(palavras_filtradas)
 
-    st.write(top10)
+        # top 10
+        top10 = contagem.most_common(10)
 
-    # gráfico
-    st.subheader("Gráfico")
+        nomes = []
+        valores = []
 
-    fig, ax = plt.subplots(figsize=(10,5))
+        for item in top10:
 
-    ax.bar(nomes, valores)
+            nomes.append(item[0])
 
-    ax.set_title("Palavras mais frequentes")
+            valores.append(item[1])
 
-    plt.xticks(rotation=45)
+        # mostrar top 10
+        st.subheader("📊 Top 10 palavras")
 
-    st.pyplot(fig)
+        st.write(top10)
 
-    # nuvem de palavras
-    st.subheader("Nuvem de palavras")
+        # gráfico
+        st.subheader("📈 Gráfico")
 
-    wordcloud = WordCloud(
-        width=800,
-        height=400,
-        background_color='white',
-        min_font_size=10
-    ).generate_from_frequencies(contagem)
+        fig, ax = plt.subplots(figsize=(10, 5))
 
-    fig2, ax2 = plt.subplots(figsize=(15,7))
+        ax.bar(nomes, valores)
 
-    ax2.imshow(wordcloud)
+        ax.set_title("Palavras mais frequentes")
 
-    ax2.axis('off')
+        plt.xticks(rotation=45)
 
-    st.pyplot(fig2)
+        st.pyplot(fig)
+
+        # nuvem de palavras
+        st.subheader("☁️ Nuvem de Palavras")
+
+        wordcloud = WordCloud(
+            width=1000,
+            height=500,
+            background_color='white'
+        ).generate_from_frequencies(contagem)
+
+        fig2, ax2 = plt.subplots(figsize=(15, 7))
+
+        ax2.imshow(wordcloud)
+
+        ax2.axis('off')
+
+        st.pyplot(fig2)
+
+    except Exception as erro:
+
+        st.error(f"Erro ao analisar o site: {erro}")
