@@ -13,7 +13,7 @@ import re
 nltk.download('stopwords')
 
 # título
-st.title("⚽ Analisador de Manchetes de Futebol")
+st.title("Analisador de Manchetes de Futebol:")
 
 # descrição
 st.write("Cole o link de um site de futebol e veja as palavras mais usadas.")
@@ -46,7 +46,7 @@ if st.button("Analisar Site"):
         # transformar html
         soup = BeautifulSoup(response.text, 'html.parser')
 
-        # pegar só manchetes
+        # pegar só títulos
         titulos = soup.find_all(['h1', 'h2', 'h3'])
 
         texto = ""
@@ -55,9 +55,23 @@ if st.button("Analisar Site"):
 
             texto += titulo.get_text() + " "
 
-        # limpar texto
+        # deixar minúsculo
         texto = texto.lower()
 
+        # remover expressões comuns
+        remover_expressoes = [
+            'são paulo',
+            'copa do mundo',
+            'campeonato brasileiro',
+            'mercado da bola',
+            'liga dos campeões'
+        ]
+
+        for expressao in remover_expressoes:
+
+            texto = texto.replace(expressao, '')
+
+        # limpar texto
         texto = re.sub(r'[^\w\s]', '', texto)
 
         texto = re.sub(r'\d+', '', texto)
@@ -66,29 +80,83 @@ if st.button("Analisar Site"):
         stop_words = set(stopwords.words('portuguese'))
 
         extras = [
+
+            # internet/site
             'image',
             'imagem',
-            'globo',
-            'ge',
-            'sportv',
+            'site',
+            'menu',
+            'principal',
+            'página',
+            'pagina',
+            'home',
+            'login',
+            'cadastro',
+            'clique',
+            'acesse',
+            'seguir',
+            'compartilhar',
+            'assine',
+            'entrar',
+
+            # redes sociais
             'facebook',
             'twitter',
             'instagram',
             'youtube',
             'whatsapp',
-            'site',
-            'seguir',
-            'compartilhar',
-            'horas',
-            'mais',
+            'tiktok',
+
+            # globo
+            'globo',
+            'sportv',
+            'ge',
+
+            # palavras inúteis
             'sobre',
             'todos',
             'ainda',
             'porque',
-            'principal',
-            'página',
-            'menu',
-            'outros'
+            'também',
+            'contra',
+            'entre',
+            'após',
+            'antes',
+            'durante',
+            'onde',
+            'quando',
+            'agora',
+            'muito',
+            'pouco',
+            'cada',
+            'desde',
+            'mesmo',
+            'mesma',
+            'outros',
+            'outras',
+            'será',
+            'foram',
+            'estão',
+            'disse',
+            'fazer',
+            'faz',
+            'vai',
+
+            # futebol genérico
+            'jogo',
+            'rodada',
+            'partida',
+            'time',
+            'times',
+            'clube',
+            'clubes',
+            'futebol',
+
+            # termos repetitivos
+            'veja',
+            'copa',
+            'brasileirão',
+            'brasileirao'
         ]
 
         stop_words.update(extras)
@@ -100,7 +168,11 @@ if st.button("Analisar Site"):
 
         for palavra in palavras:
 
-            if palavra not in stop_words and len(palavra) > 3:
+            if (
+                palavra not in stop_words
+                and len(palavra) > 4
+                and palavra.isalpha()
+            ):
 
                 palavras_filtradas.append(palavra)
 
@@ -120,7 +192,7 @@ if st.button("Analisar Site"):
 
         st.dataframe(df_top10)
 
-        # separar gráfico
+        # gráfico
         nomes = []
         valores = []
 
@@ -130,7 +202,6 @@ if st.button("Analisar Site"):
 
             valores.append(item[1])
 
-        # gráfico
         st.subheader("📈 Gráfico")
 
         fig, ax = plt.subplots(figsize=(10, 5))
@@ -147,8 +218,8 @@ if st.button("Analisar Site"):
         st.subheader("☁️ Nuvem de Palavras")
 
         wordcloud = WordCloud(
-            width=1000,
-            height=500,
+            width=1200,
+            height=600,
             background_color='white'
         ).generate_from_frequencies(contagem)
 
